@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Ajay'S Fassion House — Billing & Invoice Generator</title>
+  <meta name="description" content="Professional thermal-paper billing system and invoice generator for Ajay'S Fassion House, Karimnagar, Telangana.">
+  
+  <!-- Google Fonts: Inter for UI & Space Mono / Courier Prime for Authentic Thermal Receipt -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome Icons for polished UI -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- App Container -->
+  <div class="app-layout" id="appLayout">
+    
+    <!-- Top Navigation Bar -->
+    <header class="app-header no-print">
+      <div class="header-left">
+        <div class="brand-badge">
+          <i class="fa-solid fa-shirt"></i>
+        </div>
+        <div class="brand-info">
+          <h1 class="brand-title">Ajay'S Fassion House</h1>
+          <p class="brand-subtitle">Billing & Invoice Generator • Karimnagar</p>
+        </div>
+      </div>
+      
+      <!-- Live Clock & Quick Action Controls -->
+      <div class="header-right">
+        <div class="live-clock-pill" title="Current Shop Time">
+          <i class="fa-regular fa-clock"></i>
+          <span id="liveClock">--:--:--</span>
+        </div>
+        
+        <button type="button" class="btn btn-secondary btn-sm" id="btnQuickLoadSample" title="Load predefined 4-item clothing bill">
+          <i class="fa-solid fa-file-invoice"></i>
+          <span>Sample Bill (₹4,900)</span>
+        </button>
+        
+        <button type="button" class="btn btn-primary btn-sm" id="btnQuickNewBill">
+          <i class="fa-solid fa-plus"></i>
+          <span>New Bill</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Navigation Tabs -->
+    <nav class="nav-tabs-bar no-print" aria-label="Main Navigation">
+      <div class="tabs-container">
+        <button type="button" class="tab-btn active" data-tab="create-bill" id="tabCreateBill">
+          <i class="fa-solid fa-receipt"></i>
+          <span>Create Bill</span>
+        </button>
+        <button type="button" class="tab-btn" data-tab="previous-bills" id="tabPreviousBills">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+          <span>Previous Bills</span>
+          <span class="badge" id="billsCountBadge">0</span>
+        </button>
+        <button type="button" class="tab-btn" data-tab="shop-settings" id="tabShopSettings">
+          <i class="fa-solid fa-store"></i>
+          <span>Shop Settings</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Dashboard Summary Cards (visible on all tabs for quick metrics) -->
+    <section class="dashboard-metrics no-print" aria-label="Sales and Bill Summary">
+      <div class="metrics-grid">
+        <!-- Card 1: Total Bills -->
+        <div class="metric-card">
+          <div class="metric-icon metric-icon-purple">
+            <i class="fa-solid fa-file-invoice-dollar"></i>
+          </div>
+          <div class="metric-content">
+            <span class="metric-label">Total Bills Created</span>
+            <span class="metric-value" id="metricTotalBills">0</span>
+            <span class="metric-hint">Saved in records</span>
+          </div>
+        </div>
+
+        <!-- Card 2: Total Sales -->
+        <div class="metric-card">
+          <div class="metric-icon metric-icon-green">
+            <i class="fa-solid fa-indian-rupee-sign"></i>
+          </div>
+          <div class="metric-content">
+            <span class="metric-label">Total Sales</span>
+            <span class="metric-value" id="metricTotalSales">₹0.00</span>
+            <span class="metric-hint">Cumulative revenue</span>
+          </div>
+        </div>
+
+        <!-- Card 3: Today's Sales -->
+        <div class="metric-card">
+          <div class="metric-icon metric-icon-blue">
+            <i class="fa-solid fa-calendar-day"></i>
+          </div>
+          <div class="metric-content">
+            <span class="metric-label">Today's Sales</span>
+            <span class="metric-value" id="metricTodaySales">₹0.00</span>
+            <span class="metric-hint" id="metricTodayCount">0 bills today</span>
+          </div>
+        </div>
+
+        <!-- Card 4: Products Sold -->
+        <div class="metric-card">
+          <div class="metric-icon metric-icon-amber">
+            <i class="fa-solid fa-tags"></i>
+          </div>
+          <div class="metric-content">
+            <span class="metric-label">Products Sold</span>
+            <span class="metric-value" id="metricProductsSold">0 pcs</span>
+            <span class="metric-hint">Total garments / items</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Content Area with Dynamic Views -->
+    <main class="main-content">
+      
+      <!-- ========================================== -->
+      <!-- VIEW 1: CREATE NEW BILL & INVOICE PREVIEW  -->
+      <!-- ========================================== -->
+      <section class="view-panel active" id="viewCreateBill">
+        <div class="billing-workspace">
+          
+          <!-- LEFT COLUMN: BILLING FORM & PRODUCT ENTRY -->
+          <div class="billing-form-column no-print">
+            <form id="billingForm" novalidate onsubmit="return false;">
+              
+              <!-- Card: Invoice Meta Details -->
+              <div class="form-card">
+                <div class="card-header">
+                  <div class="card-title-group">
+                    <i class="fa-solid fa-file-lines card-title-icon"></i>
+                    <h2 class="card-title">1. Bill Information</h2>
+                  </div>
+                  <div class="card-header-actions">
+                    <button type="button" class="btn btn-outline btn-xs" id="btnResetForm" title="Clear form to new blank bill">
+                      <i class="fa-solid fa-rotate-left"></i> Reset
+                    </button>
+                    <button type="button" class="btn btn-soft btn-xs" id="btnLoadSampleBill" title="Load sample bill with 4 clothing items (₹4,900)">
+                      <i class="fa-solid fa-wand-magic-sparkles"></i> Load Sample
+                    </button>
+                  </div>
+                </div>
+
+                <div class="form-grid-3">
+                  <!-- Invoice Number -->
+                  <div class="form-group">
+                    <label for="invNumber">Invoice No. <span class="required-star">*</span></label>
+                    <div class="input-with-icon">
+                      <i class="fa-solid fa-hashtag input-icon"></i>
+                      <input type="text" id="invNumber" class="form-control font-mono" placeholder="AFH-1001" required>
+                    </div>
+                  </div>
+
+                  <!-- Invoice Date -->
+                  <div class="form-group">
+                    <label for="invDate">Invoice Date <span class="required-star">*</span></label>
+                    <div class="input-with-icon">
+                      <i class="fa-regular fa-calendar input-icon"></i>
+                      <input type="date" id="invDate" class="form-control" required>
+                    </div>
+                  </div>
+
+                  <!-- Invoice Time -->
+                  <div class="form-group">
+                    <label for="invTime">Invoice Time <span class="required-star">*</span></label>
+                    <div class="input-with-icon">
+                      <i class="fa-regular fa-clock input-icon"></i>
+                      <input type="time" id="invTime" class="form-control" step="1" required>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card: Customer Details -->
+              <div class="form-card">
+                <div class="card-header">
+                  <div class="card-title-group">
+                    <i class="fa-solid fa-user-tag card-title-icon"></i>
+                    <h2 class="card-title">2. Customer Details <span class="text-muted font-normal">(Optional)</span></h2>
+                  </div>
+                  <span class="badge-soft">Quick Autofill</span>
+                </div>
+
+                <div class="form-grid-3">
+                  <!-- Customer Name -->
+                  <div class="form-group">
+                    <label for="custName">Customer Name</label>
+                    <div class="input-with-icon">
+                      <i class="fa-regular fa-user input-icon"></i>
+                      <input type="text" id="custName" class="form-control" placeholder="e.g. Ramesh Kumar" autocomplete="name">
+                    </div>
+                  </div>
+
+                  <!-- Customer Phone -->
+                  <div class="form-group">
+                    <label for="custPhone">Phone Number</label>
+                    <div class="input-with-icon">
+                      <i class="fa-solid fa-phone input-icon"></i>
+                      <input type="tel" id="custPhone" class="form-control" placeholder="e.g. 9848012345" autocomplete="tel">
+                    </div>
+                  </div>
+
+                  <!-- Billing Address -->
+                  <div class="form-group">
+                    <label for="custAddress">Billing Address</label>
+                    <div class="input-with-icon">
+                      <i class="fa-solid fa-location-dot input-icon"></i>
+                      <input type="text" id="custAddress" class="form-control" placeholder="e.g. Karimnagar" autocomplete="street-address">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card: Product and Quantity Entry -->
+              <div class="form-card">
+                <div class="card-header">
+                  <div class="card-title-group">
+                    <i class="fa-solid fa-cart-shopping card-title-icon"></i>
+                    <h2 class="card-title">3. Product & Quantity Entry</h2>
+                  </div>
+                  <div class="card-badge-info">
+                    <span id="itemsSummaryPill" class="summary-pill">0 Items • 0 Pcs</span>
+                  </div>
+                </div>
+
+                <!-- Quick Presets for Rapid Garment Entry -->
+                <div class="quick-tags-container">
+                  <span class="quick-tags-label"><i class="fa-solid fa-bolt"></i> Quick Add:</span>
+                  <div class="quick-tags-list">
+                    <button type="button" class="tag-chip" data-name="Shirt" data-price="600">+ Shirt (₹600)</button>
+                    <button type="button" class="tag-chip" data-name="Shirt" data-price="800">+ Shirt (₹800)</button>
+                    <button type="button" class="tag-chip" data-name="Cotton" data-price="700">+ Cotton (₹700)</button>
+                    <button type="button" class="tag-chip" data-name="Cotton" data-price="900">+ Cotton (₹900)</button>
+                    <button type="button" class="tag-chip" data-name="Jeans Pant" data-price="1200">+ Jeans (₹1,200)</button>
+                    <button type="button" class="tag-chip" data-name="T-Shirt" data-price="450">+ T-Shirt (₹450)</button>
+                    <button type="button" class="tag-chip" data-name="Kurta Pajama" data-price="1500">+ Kurta (₹1,500)</button>
+                  </div>
+                </div>
+
+                <!-- Products Table / Dynamic List -->
+                <div class="table-responsive">
+                  <table class="products-table" id="productsTable">
+                    <thead>
+                      <tr>
+                        <th class="th-num">#</th>
+                        <th class="th-item">Item Name <span class="required-star">*</span></th>
+                        <th class="th-qty">Qty (Pcs) <span class="required-star">*</span></th>
+                        <th class="th-price">Price / Pc (₹) <span class="required-star">*</span></th>
+                        <th class="th-amount">Line Amount (₹)</th>
+                        <th class="th-actions">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="productsTableBody">
+                      <!-- Dynamic rows will be inserted here -->
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Empty State if no items -->
+                <div class="empty-products-state" id="emptyProductsNotice" style="display: none;">
+                  <i class="fa-solid fa-basket-shopping empty-icon"></i>
+                  <p class="empty-title">No items added yet</p>
+                  <p class="empty-desc">Click "Add Item" below or choose a quick preset to begin.</p>
+                </div>
+
+                <!-- Product Table Actions -->
+                <div class="product-actions-bar">
+                  <button type="button" class="btn btn-secondary" id="btnAddProductRow">
+                    <i class="fa-solid fa-plus"></i> Add Item
+                  </button>
+                  <button type="button" class="btn btn-outline" id="btnClearAllItems">
+                    <i class="fa-regular fa-trash-can"></i> Clear Items
+                  </button>
+                  <div class="product-total-preview">
+                    <span>Subtotal Items:</span>
+                    <strong id="productsSubtotalPreview">₹0.00</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card: Calculations, Discounts, Tax & Payment -->
+              <div class="form-card">
+                <div class="card-header">
+                  <div class="card-title-group">
+                    <i class="fa-solid fa-calculator card-title-icon"></i>
+                    <h2 class="card-title">4. Bill Calculations & Payment</h2>
+                  </div>
+                  <span class="badge-accent">Auto Computed</span>
+                </div>
+
+                <div class="calculations-grid">
+                  <!-- Calculations Left: Discount, Tax & Notes -->
+                  <div class="calc-inputs-col">
+                    
+                    <!-- Discount Field -->
+                    <div class="form-group">
+                      <label for="billDiscount">Discount</label>
+                      <div class="input-group-row">
+                        <select id="discountType" class="form-select select-compact">
+                          <option value="amount">Fixed (₹)</option>
+                          <option value="percent">Percent (%)</option>
+                        </select>
+                        <input type="number" id="billDiscount" class="form-control" placeholder="0" min="0" step="any" value="0">
+                      </div>
+                      <small class="field-help" id="discountCalculatedHelp">Discount: ₹0.00</small>
+                    </div>
+
+                    <!-- Tax / GST Configuration (Toggleable) -->
+                    <div class="form-group tax-box-container">
+                      <div class="tax-box-header">
+                        <label class="custom-toggle-label" for="enableTaxToggle">
+                          <input type="checkbox" id="enableTaxToggle" class="custom-toggle-input">
+                          <span class="custom-toggle-slider"></span>
+                          <span class="toggle-text">Apply Tax / GST</span>
+                        </label>
+                        <span class="tax-status-indicator" id="taxStatusText">Tax Disabled</span>
+                      </div>
+                      
+                      <div class="tax-options-subpanel" id="taxOptionsPanel" style="display: none;">
+                        <div class="form-grid-2">
+                          <div>
+                            <label for="taxRateInput">GST Rate (%)</label>
+                            <input type="number" id="taxRateInput" class="form-control" value="5" min="0" max="100" step="0.5">
+                          </div>
+                          <div>
+                            <label for="taxBreakdownType">Breakdown Format</label>
+                            <select id="taxBreakdownType" class="form-select">
+                              <option value="single">Single GST Rate</option>
+                              <option value="cgst_sgst">CGST + SGST (Split)</option>
+                            </select>
+                          </div>
+                        </div>
+                        <small class="field-help" id="taxCalculatedHelp">Tax: ₹0.00</small>
+                      </div>
+                    </div>
+
+                    <!-- Optional Note / Remarks -->
+                    <div class="form-group">
+                      <label for="billNotes">Receipt Remarks / Note (Optional)</label>
+                      <input type="text" id="billNotes" class="form-control" placeholder="e.g. Festival offer applied / Exchange within 7 days">
+                    </div>
+                  </div>
+
+                  <!-- Calculations Right: Summary Totals & Payment Method -->
+                  <div class="calc-summary-col">
+                    <div class="summary-breakdown-box">
+                      
+                      <!-- Line 1: Subtotal -->
+                      <div class="breakdown-row">
+                        <span class="breakdown-label">Subtotal:</span>
+                        <span class="breakdown-val font-mono" id="calcSubtotal">₹0.00</span>
+                      </div>
+
+                      <!-- Line 2: Discount -->
+                      <div class="breakdown-row text-success">
+                        <span class="breakdown-label">Discount:</span>
+                        <span class="breakdown-val font-mono" id="calcDiscount">- ₹0.00</span>
+                      </div>
+
+                      <!-- Line 3: Tax (if applicable) -->
+                      <div class="breakdown-row" id="calcTaxRow" style="display: none;">
+                        <span class="breakdown-label" id="calcTaxLabel">Tax / GST:</span>
+                        <span class="breakdown-val font-mono" id="calcTax">+ ₹0.00</span>
+                      </div>
+
+                      <div class="breakdown-divider"></div>
+
+                      <!-- Line 4: Grand Total -->
+                      <div class="breakdown-row grand-total-row">
+                        <span class="breakdown-label">Grand Total:</span>
+                        <span class="breakdown-val font-mono" id="calcGrandTotal">₹0.00</span>
+                      </div>
+
+                      <div class="breakdown-divider"></div>
+
+                      <!-- Payment Method & Status -->
+                      <div class="payment-controls-section">
+                        <div class="form-grid-2">
+                          <div class="form-group mb-2">
+                            <label for="paymentMethod">Payment Method</label>
+                            <select id="paymentMethod" class="form-select">
+                              <option value="Cash" selected>Cash</option>
+                              <option value="UPI">UPI / GPay / PhonePe</option>
+                              <option value="Card">Card</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          </div>
+
+                          <div class="form-group mb-2">
+                            <label for="paymentStatus">Payment Status</label>
+                            <select id="paymentStatus" class="form-select">
+                              <option value="Paid" selected>Paid</option>
+                              <option value="Unpaid">Unpaid</option>
+                              <option value="Partially Paid">Partially Paid</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <!-- Amount Paid & Balance Due -->
+                        <div class="form-grid-2">
+                          <div class="form-group mb-0">
+                            <label for="amountPaidInput">Amount Paid (₹)</label>
+                            <input type="number" id="amountPaidInput" class="form-control font-mono" min="0" step="any" value="0.00">
+                          </div>
+
+                          <div class="form-group mb-0">
+                            <label>Balance Due (₹)</label>
+                            <div class="balance-display font-mono" id="calcBalanceDue">₹0.00</div>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Form Final Action Buttons -->
+                <div class="form-submit-bar">
+                  <button type="button" class="btn btn-secondary btn-lg" id="btnPreviewMobileToggle">
+                    <i class="fa-solid fa-eye"></i> View Thermal Bill
+                  </button>
+                  <button type="button" class="btn btn-success btn-lg" id="btnSaveInvoice">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Bill Record
+                  </button>
+                  <button type="button" class="btn btn-primary btn-lg" id="btnSaveAndPrint">
+                    <i class="fa-solid fa-print"></i> Save & Print Receipt
+                  </button>
+                </div>
+              </div>
+
+            </form>
+          </div>
+
+          <!-- RIGHT COLUMN: REALISTIC THERMAL RECEIPT PREVIEW -->
+          <div class="invoice-preview-column" id="previewColumnContainer">
+            
+            <div class="preview-sticky-wrapper">
+              
+              <!-- Preview Header & Tool bar -->
+              <div class="preview-toolbar no-print">
+                <div class="toolbar-title-wrap">
+                  <span class="preview-live-badge"><i class="fa-solid fa-circle"></i> Live Preview</span>
+                  <span class="paper-width-badge" id="paperWidthBadge">80mm Thermal</span>
+                </div>
+                
+                <div class="toolbar-actions">
+                  <button type="button" class="btn-icon" id="btnPrintReceipt" title="Print Thermal Receipt (Ctrl+P)">
+                    <i class="fa-solid fa-print"></i>
+                  </button>
+                  <button type="button" class="btn-icon" id="btnDownloadPDF" title="Save as PDF / Download">
+                    <i class="fa-solid fa-file-pdf"></i>
+                  </button>
+                  <button type="button" class="btn-icon" id="btnShareWhatsApp" title="Share via WhatsApp">
+                    <i class="fa-brands fa-whatsapp"></i>
+                  </button>
+                  <button type="button" class="btn-icon" id="btnCopyText" title="Copy Raw Receipt Text">
+                    <i class="fa-regular fa-copy"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Thermal Receipt Roll Viewport -->
+              <div class="receipt-viewport">
+                
+                <!-- The Genuine Thermal Receipt Card -->
+                <article class="thermal-receipt" id="printableThermalReceipt">
+                  
+                  <!-- Top Paper Edge -->
+                  <div class="receipt-tear-edge-top no-print"></div>
+
+                  <div class="receipt-content">
+                    
+                    <!-- Shop Header Section -->
+                    <header class="receipt-shop-header">
+                      <h2 class="receipt-shop-name" id="rcptShopName">AJAY'S FASSION HOUSE</h2>
+                      <p class="receipt-shop-line" id="rcptShopAddr1">2-7/1, Himmathnagar,</p>
+                      <p class="receipt-shop-line" id="rcptShopAddr2">Karimnagar, Telangana</p>
+                      <p class="receipt-shop-line" id="rcptShopPhoneWrap">Phone: <span id="rcptShopPhone">+91 98480 12345</span></p>
+                      <p class="receipt-shop-line" id="rcptGstinWrap" style="display: none;">GSTIN: <span id="rcptGstin"></span></p>
+                    </header>
+
+                    <!-- Dotted Line -->
+                    <div class="thermal-dotted-line"></div>
+
+                    <!-- Receipt Title -->
+                    <div class="receipt-title-box">
+                      <h3 class="receipt-bill-title" id="rcptBillTitle">TAX INVOICE / BILL</h3>
+                    </div>
+
+                    <!-- Dotted Line -->
+                    <div class="thermal-dotted-line"></div>
+
+                    <!-- Meta Details: Customer, Bill No, Date, Time, Payment -->
+                    <div class="receipt-meta-grid">
+                      <div class="meta-row" id="rcptCustRow" style="display: none;">
+                        <span class="meta-label">Customer</span>
+                        <span class="meta-sep">:</span>
+                        <span class="meta-val" id="rcptCustName">Walk-in</span>
+                      </div>
+                      <div class="meta-row" id="rcptCustPhoneRow" style="display: none;">
+                        <span class="meta-label">Phone</span>
+                        <span class="meta-sep">:</span>
+                        <span class="meta-val" id="rcptCustPhone">-</span>
+                      </div>
+                      <div class="meta-row">
+                        <span class="meta-label">Bill No.</span>
+                        <span class="meta-sep">:</span>
+                        <span class="meta-val bold-text" id="rcptBillNo">AFH-1001</span>
+                      </div>
+                      <div class="meta-row">
+                        <span class="meta-label">Date</span>
+                        <span class="meta-sep">:</span>
+                        <span class="meta-val" id="rcptDate">15/10/2026</span>
+                      </div>
+                      <div class="meta-row">
+                        <span class="meta-label">Time</span>
+                        <span class="meta-sep">:</span>
+                        <span class="meta-val" id="rcptTime">11:34 AM</span>
+                      </div>
+                      <div class="meta-row">
+                        <span class="meta-label">Payment</span>
+                        <span class="meta-sep">:</span>
+                        <span class="meta-val" id="rcptPaymentMethod">Cash</span>
+                      </div>
+                    </div>
+
+                    <!-- Dotted Line -->
+                    <div class="thermal-dotted-line"></div>
+
+                    <!-- Product Items Header -->
+                    <div class="receipt-items-header">
+                      <span class="col-item">Item Name</span>
+                      <span class="col-qty">Qty</span>
+                      <span class="col-price">Price</span>
+                      <span class="col-amount">Amount</span>
+                    </div>
+
+                    <!-- Dotted Line -->
+                    <div class="thermal-dotted-line"></div>
+
+                    <!-- Dynamic Product Rows -->
+                    <div class="receipt-items-list" id="rcptItemsList">
+                      <!-- Rendered by JS -->
+                    </div>
+
+                    <!-- Dotted Line -->
+                    <div class="thermal-dotted-line"></div>
+
+                    <!-- Item & Qty Summary -->
+                    <div class="receipt-counts-row">
+                      <span>Total Items: <strong id="rcptTotalItemsCount">0</strong></span>
+                      <span>Total Qty: <strong id="rcptTotalPcsCount">0 Pcs</strong></span>
+                    </div>
+
+                    <!-- Dotted Line -->
+                    <div class="thermal-dotted-line"></div>
+
+                    <!-- Financial Totals Section -->
+                    <div class="receipt-totals-table">
+                      <div class="totals-row">
+                        <span class="tot-label">Subtotal:</span>
+                        <span class="tot-val" id="rcptSubtotal">₹0.00</span>
+                      </div>
+                      <div class="totals-row" id="rcptDiscountRow" style="display: none;">
+                        <span class="tot-label">Discount:</span>
+                        <span class="tot-val" id="rcptDiscount">-₹0.00</span>
+                      </div>
+                      <div class="totals-row" id="rcptTaxRow" style="display: none;">
+                        <span class="tot-label" id="rcptTaxLabel">Tax (GST):</span>
+                        <span class="tot-val" id="rcptTax">₹0.00</span>
+                      </div>
+                      
+                      <!-- Grand Total Row -->
+                      <div class="thermal-double-line"></div>
+                      <div class="totals-row grand-total-line">
+                        <span class="tot-label">Grand Total:</span>
+                        <span class="tot-val" id="rcptGrandTotal">₹0.00</span>
+                      </div>
+                      <div class="thermal-double-line"></div>
+
+                      <!-- Paid & Balance -->
+                      <div class="totals-row">
+                        <span class="tot-label">Amount Paid:</span>
+                        <span class="tot-val" id="rcptAmountPaid">₹0.00</span>
+                      </div>
+                      <div class="totals-row">
+                        <span class="tot-label">Balance Due:</span>
+                        <span class="tot-val" id="rcptBalanceDue">₹0.00</span>
+                      </div>
+                      <div class="totals-row">
+                        <span class="tot-label">Payment Status:</span>
+                        <span class="tot-val bold-text" id="rcptStatusText">PAID</span>
+                      </div>
+                    </div>
+
+                    <!-- Notes if any -->
+                    <div class="receipt-notes-box" id="rcptNotesBox" style="display: none;">
+                      <div class="thermal-dotted-line"></div>
+                      <p class="receipt-note-line" id="rcptNotesText"></p>
+                    </div>
+
+                    <!-- Dotted Line -->
+                    <div class="thermal-dotted-line"></div>
+
+                    <!-- Receipt Footer & Policy -->
+                    <footer class="receipt-footer">
+                      <p class="footer-msg bold-text" id="rcptFooterMsg">THANK YOU! VISIT AGAIN</p>
+                      <p class="footer-policy" id="rcptFooterPolicy">Goods once sold can be exchanged within 7 days with original bill.</p>
+                      <p class="footer-timestamp" id="rcptPrintedAt">Computer Generated Invoice</p>
+                    </footer>
+
+                  </div>
+
+                  <!-- Bottom Serrated Tear Edge -->
+                  <div class="receipt-tear-edge-bottom no-print"></div>
+
+                </article>
+
+              </div>
+
+              <!-- Quick Print Instructions / Thermal roll selector -->
+              <div class="preview-quick-settings no-print">
+                <div class="quick-setting-item">
+                  <label for="previewRollWidth">Paper Size:</label>
+                  <select id="previewRollWidth" class="form-select select-xs">
+                    <option value="80mm" selected>80mm (3 Inch Standard)</option>
+                    <option value="58mm">58mm (2 Inch Compact)</option>
+                    <option value="a4">Standard A4 / Page</option>
+                  </select>
+                </div>
+                <div class="quick-setting-item">
+                  <button type="button" class="btn btn-outline btn-xs" id="btnDirectPrint">
+                    <i class="fa-solid fa-print"></i> Print Now
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW 2: PREVIOUS BILLS & HISTORY           -->
+      <!-- ========================================== -->
+      <section class="view-panel" id="viewPreviousBills">
+        <div class="panel-card">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title"><i class="fa-solid fa-clock-rotate-left"></i> Previous Bills & History</h2>
+              <p class="panel-subtitle">Search, view, reprint, duplicate or export your saved customer invoices.</p>
+            </div>
+            <div class="panel-actions">
+              <button type="button" class="btn btn-outline" id="btnExportCSV">
+                <i class="fa-solid fa-file-excel"></i> Export to CSV
+              </button>
+              <button type="button" class="btn btn-primary" id="btnNewBillFromHistory">
+                <i class="fa-solid fa-plus"></i> Create New Bill
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter & Search Toolbar -->
+          <div class="history-filter-bar">
+            <div class="search-box">
+              <i class="fa-solid fa-magnifying-glass search-icon"></i>
+              <input type="text" id="historySearchInput" class="form-control" placeholder="Search by Bill No, Customer Name, Phone, or Item...">
+            </div>
+
+            <div class="filter-controls">
+              <select id="historyFilterStatus" class="form-select select-auto">
+                <option value="all">All Payment Statuses</option>
+                <option value="Paid">Paid</option>
+                <option value="Unpaid">Unpaid</option>
+                <option value="Partially Paid">Partially Paid</option>
+              </select>
+
+              <select id="historyFilterDate" class="form-select select-auto">
+                <option value="all">All Dates</option>
+                <option value="today">Today</option>
+                <option value="this_week">This Week</option>
+                <option value="this_month">This Month</option>
+              </select>
+
+              <button type="button" class="btn btn-soft" id="btnClearHistoryFilters">
+                Reset Filters
+              </button>
+            </div>
+          </div>
+
+          <!-- History Table -->
+          <div class="table-responsive">
+            <table class="history-table" id="historyTable">
+              <thead>
+                <tr>
+                  <th>Bill No</th>
+                  <th>Date & Time</th>
+                  <th>Customer</th>
+                  <th>Items / Qty</th>
+                  <th>Total Amount</th>
+                  <th>Payment</th>
+                  <th>Status</th>
+                  <th class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="historyTableBody">
+                <!-- Rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Empty History State -->
+          <div class="empty-history-state" id="emptyHistoryNotice" style="display: none;">
+            <i class="fa-solid fa-folder-open empty-icon"></i>
+            <p class="empty-title">No bills found</p>
+            <p class="empty-desc">Saved bills will appear here with instant reprint and accounting summaries.</p>
+            <button type="button" class="btn btn-primary btn-sm mt-3" id="btnEmptyCreateBill">
+              <i class="fa-solid fa-plus"></i> Create Your First Bill
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- VIEW 3: SHOP SETTINGS                      -->
+      <!-- ========================================== -->
+      <section class="view-panel" id="viewShopSettings">
+        <div class="panel-card max-w-4xl mx-auto">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title"><i class="fa-solid fa-store"></i> Shop Settings & Invoice Configuration</h2>
+              <p class="panel-subtitle">Configure your store information, tax rules, receipt footer message, and printing preferences.</p>
+            </div>
+            <button type="button" class="btn btn-success" id="btnSaveShopSettings">
+              <i class="fa-solid fa-check"></i> Save Settings
+            </button>
+          </div>
+
+          <form id="settingsForm" onsubmit="return false;">
+            
+            <!-- Group 1: Store Identity -->
+            <div class="settings-section">
+              <h3 class="section-title"><i class="fa-solid fa-shop"></i> Store Identity & Location</h3>
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label for="cfgShopName">Shop Name <span class="required-star">*</span></label>
+                  <input type="text" id="cfgShopName" class="form-control" value="Ajay'S Fassion House" required>
+                  <small class="field-help">Displayed prominently at top of receipt</small>
+                </div>
+
+                <div class="form-group">
+                  <label for="cfgPhone">Phone Number <span class="required-star">*</span></label>
+                  <input type="tel" id="cfgPhone" class="form-control" value="9848012345" placeholder="e.g. 9848012345" required>
+                  <small class="field-help">Printed on bill and used for WhatsApp receipts</small>
+                </div>
+
+                <div class="form-group">
+                  <label for="cfgAddress1">Address Line 1 <span class="required-star">*</span></label>
+                  <input type="text" id="cfgAddress1" class="form-control" value="2-7/1, Himmathnagar," required>
+                </div>
+
+                <div class="form-group">
+                  <label for="cfgAddress2">Address Line 2 <span class="required-star">*</span></label>
+                  <input type="text" id="cfgAddress2" class="form-control" value="Karimnagar, Telangana" required>
+                </div>
+              </div>
+            </div>
+
+            <!-- Group 2: Tax & GST Configuration -->
+            <div class="settings-section">
+              <h3 class="section-title"><i class="fa-solid fa-percent"></i> Tax & GST Settings</h3>
+              
+              <div class="tax-config-card">
+                <div class="toggle-setting-row">
+                  <div>
+                    <h4 class="toggle-heading">Enable Tax / GST on Invoices</h4>
+                    <p class="toggle-subtext">Toggle this ON only if your shop is registered under GST. Keep OFF for non-GST billing.</p>
+                  </div>
+                  <label class="custom-toggle-label" for="cfgTaxEnabled">
+                    <input type="checkbox" id="cfgTaxEnabled" class="custom-toggle-input">
+                    <span class="custom-toggle-slider"></span>
+                  </label>
+                </div>
+
+                <div class="form-grid-3 mt-3" id="cfgTaxDetailsGroup" style="display: none;">
+                  <div class="form-group">
+                    <label for="cfgGstin">GSTIN (GST Number)</label>
+                    <input type="text" id="cfgGstin" class="form-control font-mono uppercase" placeholder="36ABCDE1234F1Z5">
+                    <small class="field-help">Leave empty if not applicable</small>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="cfgDefaultGstRate">Default GST Rate (%)</label>
+                    <input type="number" id="cfgDefaultGstRate" class="form-control" value="5" min="0" max="100" step="0.5">
+                    <small class="field-help">Common garment rates: 5% or 12%</small>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="cfgTaxTitle">Tax Display Name</label>
+                    <input type="text" id="cfgTaxTitle" class="form-control" value="GST">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Group 3: Invoice Sequencing & Paper Width -->
+            <div class="settings-section">
+              <h3 class="section-title"><i class="fa-solid fa-file-invoice"></i> Invoice Sequencing & Print Defaults</h3>
+              <div class="form-grid-3">
+                <div class="form-group">
+                  <label for="cfgInvoicePrefix">Invoice Prefix</label>
+                  <input type="text" id="cfgInvoicePrefix" class="form-control font-mono" value="AFH-">
+                  <small class="field-help">e.g. AFH- for AFH-1001</small>
+                </div>
+
+                <div class="form-group">
+                  <label for="cfgNextSeq">Next Invoice Number</label>
+                  <input type="number" id="cfgNextSeq" class="form-control font-mono" value="1001" min="1">
+                  <small class="field-help">Auto increments on every bill</small>
+                </div>
+
+                <div class="form-group">
+                  <label for="cfgDefaultPaper">Default Paper Width</label>
+                  <select id="cfgDefaultPaper" class="form-select">
+                    <option value="80mm" selected>80mm (Thermal Roll 3")</option>
+                    <option value="58mm">58mm (Thermal Roll 2")</option>
+                    <option value="a4">A4 Page</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Group 4: Receipt Footer & Policy -->
+            <div class="settings-section">
+              <h3 class="section-title"><i class="fa-solid fa-comment-dots"></i> Receipt Footer & Store Policy</h3>
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label for="cfgFooterMsg">Greeting / Header</label>
+                  <input type="text" id="cfgFooterMsg" class="form-control" value="THANK YOU! VISIT AGAIN">
+                </div>
+
+                <div class="form-group">
+                  <label for="cfgUPI">UPI ID for Payment QR (Optional)</label>
+                  <input type="text" id="cfgUPI" class="form-control" placeholder="e.g. 9848012345@upi or ajayfashion@okaxis">
+                  <small class="field-help">Optional UPI ID to generate QR on bill</small>
+                </div>
+
+                <div class="form-group col-span-2">
+                  <label for="cfgFooterPolicy">Exchange & Store Policy</label>
+                  <textarea id="cfgFooterPolicy" class="form-control" rows="2">Goods once sold can be exchanged within 7 days with original bill.</textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Group 5: Data Management (Backup / Restore / Reset) -->
+            <div class="settings-section">
+              <h3 class="section-title"><i class="fa-solid fa-database"></i> Backup & Data Management</h3>
+              <div class="backup-actions-grid">
+                <div class="backup-card">
+                  <h4><i class="fa-solid fa-download"></i> Backup Bills Data</h4>
+                  <p>Download a JSON backup of all saved customer bills and shop settings.</p>
+                  <button type="button" class="btn btn-secondary btn-sm" id="btnBackupData">
+                    Download Backup File
+                  </button>
+                </div>
+
+                <div class="backup-card">
+                  <h4><i class="fa-solid fa-upload"></i> Restore Backup</h4>
+                  <p>Restore previous billing records from an exported JSON file.</p>
+                  <input type="file" id="restoreFileInput" accept=".json" style="display: none;">
+                  <button type="button" class="btn btn-outline btn-sm" id="btnTriggerRestore">
+                    Select Backup File
+                  </button>
+                </div>
+
+                <div class="backup-card danger-card">
+                  <h4><i class="fa-solid fa-triangle-exclamation"></i> Reset Records</h4>
+                  <p>Clear all bills history or reset invoice sequence counter.</p>
+                  <button type="button" class="btn btn-danger-outline btn-sm" id="btnResetHistory">
+                    Clear Bills History
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-save-bar">
+              <button type="button" class="btn btn-success btn-lg" id="btnSaveShopSettingsBottom">
+                <i class="fa-solid fa-check"></i> Save Settings
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Mobile Sticky Action Bar (visible only on small screens) -->
+    <div class="mobile-sticky-bar no-print" id="mobileStickyBar">
+      <div class="mobile-bar-summary">
+        <span class="mobile-bar-total" id="mobileBarTotal">₹0.00</span>
+        <span class="mobile-bar-items" id="mobileBarItems">0 Items</span>
+      </div>
+      <div class="mobile-bar-buttons">
+        <button type="button" class="btn btn-secondary btn-sm" id="btnMobilePreviewToggle">
+          <i class="fa-solid fa-receipt"></i> Preview
+        </button>
+        <button type="button" class="btn btn-primary btn-sm" id="btnMobileSavePrint">
+          <i class="fa-solid fa-print"></i> Print
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal: View Saved Bill Details / Reprint -->
+    <div class="modal-backdrop no-print" id="billDetailModal" style="display: none;">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3 class="modal-title" id="modalBillTitle">Bill Details</h3>
+          <button type="button" class="modal-close-btn" id="btnCloseBillModal">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="modal-body" id="modalBillReceiptContainer">
+          <!-- Cloned receipt rendered here -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="btnModalClose">Close</button>
+          <button type="button" class="btn btn-secondary" id="btnModalWhatsApp">
+            <i class="fa-brands fa-whatsapp"></i> WhatsApp
+          </button>
+          <button type="button" class="btn btn-primary" id="btnModalPrint">
+            <i class="fa-solid fa-print"></i> Print Bill
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container no-print" id="toastContainer" aria-live="polite"></div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
